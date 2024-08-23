@@ -27,8 +27,13 @@ def find_min(numbers):
 
 
 # Запросить у пользователя ввод значений для списка
-user_input = input("Введите числа через пробел: ")
-numbers_list = list(map(float, user_input.split()))
+while True:
+    user_input = input("Введите числа через пробел: ")
+    try:
+        numbers_list = list(map(float, user_input.split()))
+        break  # Выйти из цикла, если ввод корректен
+    except ValueError:
+        print("Пожалуйста, введите только числовые значения.")
 
 # Создание потоков
 max_thread = threading.Thread(target=find_max, args=(numbers_list,))
