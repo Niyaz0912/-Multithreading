@@ -1,71 +1,78 @@
 import threading
 
-# Переменные для хранения значений
-total_sum = 0
-average_value = 0.0
+# Список для хранения чисел
+numbers = []
 
-# Создаем события для синхронизации потоков
+# События для синхронизации потоков
 event_sum = threading.Event()
-event_average = threading.Event()
+event_avg = threading.Event()
+
+# Список для хранения результатов
+results = []
 
 
-def calculate_sum(numbers):
-    """Функция для вычисления суммы чисел в списке.
-    Параметры:
-    numbers (list): Список чисел, для которых будет вычисляться сумма.
-    Возвращает:
-    None"""
-    global total_sum
-    total_sum = sum(numbers)  # Находим сумму
+def find_sum():
+    """Функция для нахождения суммы всех элементов в списке чисел.
+    Ожидает события для начала поиска суммы, затем находит
+    сумму чисел и сохраняет её в результирующий список.
+    Устанавливает событие для нахождения среднего значения после завершения."""
+    for i in range(5):
+        # Ожидание события
+        event_sum.wait()
+        if numbers:  # Проверяем, что список не пуст
+            total_sum = sum(numbers)
+            results.append(total_sum)  # Сохраняем результат
+        event_avg.set()  # Устанавливаем событие для среднего
+        event_sum.clear()  # Сбрасываем событие для следующей итерации
 
 
-def calculate_average(numbers):
-    """Функция для вычисления среднеарифметического значения чисел в списке.
-    Параметры:
-    numbers (list): Список чисел, для которых будет вычисляться среднеарифметическое.
-    Возвращает:
-    None"""
-    global average_value
-    if numbers:  # Проверяем, что список не пуст
-        average_value = sum(numbers) / len(numbers)  # Находим среднее
-    else:
-        average_value = 0.0  # Если список пуст, среднее равно 0
+def find_average():
+    """Функция для нахождения среднеарифметического значения всех элементов в списке чисел.
+    Ожидает события для начала вычисления среднего, затем находит
+    среднее значение и сохраняет его в результирующий список.
+    Устанавливает событие для поиска суммы после завершения."""
+    for i in range(5):
+        # Ожидание события
+        event_avg.wait()
+        if numbers:  # Проверяем, что список не пуст
+            avg_value = round(sum(numbers) / len(numbers), 2)  # Округляем до двух знаков
+            results.append(avg_value)  # Сохраняем результат
+        event_sum.set()  # Устанавливаем событие для суммы
+        event_avg.clear()  # Сбрасываем событие для следующей итерации
+
+def main():
+    """Основная функция программы. Запрашивает у пользователя ввод чисел,
+    создает и запускает потоки для нахождения суммы и среднеарифметического,
+    а затем ожидает их завершения. После завершения выводит результаты."""
+    global numbers
+
+    # Ввод чисел от пользователя
+    while True:
+        user_input = input("Введите числа через пробел: ")
+        try:
+            numbers = list(map(int, user_input.split()))  # Преобразуем ввод в список чисел
+            break  # Выйти из цикла, если ввод корректен
+        except ValueError:
+            print("Пожалуйста, введите только числовые значения.")
+
+    # Создание потоков
+    thread_sum = threading.Thread(target=find_sum)
+    thread_avg = threading.Thread(target=find_average)
+
+    # Запуск потоков
+    thread_sum.start()
+    thread_avg.start()
+
+    # Начинаем с события для нахождения суммы
+    event_sum.set()
+
+    # Ожидание завершения потоков
+    thread_sum.join()
+    thread_avg.join()
+
+    # Вывод результатов
+    print(" / ".join(map(str, results)))  # Преобразуем числа в строки для вывода
 
 
-# Запросить у пользователя ввод значений для списка
-while True:
-    user_input = input("Введите числа через пробел: ")
-    try:
-        numbers_list = list(map(int, user_input.split()))
-        break  # Выйти из цикла, если ввод корректен
-    except ValueError:
-        print("Пожалуйста, введите только числовые значения.")
-
-# Создание потоков
-thread_1 = threading.Thread(target=calculate_sum, args=(numbers_list,))
-thread_2 = threading.Thread(target=calculate_average, args=(numbers_list,))
-
-# Запуск потоков
-thread_1.start()
-thread_2.start()
-
-# Ожидание завершения потоков
-thread_1.join()
-thread_2.join()
-
-# Цикл для вывода значений поочередно
-for _ in range(5):
-    print(f"{total_sum}", end="")
-    event_average.set()  # Сигнализируем, что сумма была выведена
-    event_sum.clear()  # Ожидаем, пока среднее не будет выведено
-    event_average.wait()  # Ждем, пока среднее не будет выведено
-    print("/", end="")
-
-    print(f"{average_value:.2f}", end="")
-    event_sum.set()  # Сигнализируем, что среднее было выведено
-    event_average.clear()  # Ожидаем, пока сумма не будет выведена
-    event_sum.wait()  # Ждем, пока сумма не будет выведена
-    if _ < 4:
-        print("/", end="")
-
-print()
+if __name__ == "__main__":
+    main()

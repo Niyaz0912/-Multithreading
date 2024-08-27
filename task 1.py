@@ -4,61 +4,78 @@ import threading
 numbers = []
 
 # События для синхронизации потоков
-event_max = threading.Event()
-event_min = threading.Event()
+event_sum = threading.Event()
+event_avg = threading.Event()
 
 # Список для хранения результатов
 results = []
 
 
-def find_max():
+def find_sum():
+    """
+    Функция для нахождения суммы всех элементов в списке чисел.
+    Ожидает события для начала поиска суммы, затем находит
+    сумму чисел и сохраняет её в результирующий список.
+    Устанавливает событие для нахождения среднего значения после завершения.
+    """
     for i in range(5):
         # Ожидание события
-        event_max.wait()
+        event_sum.wait()
         if numbers:  # Проверяем, что список не пуст
-            max_value = max(numbers)
-            results.append(max_value)  # Сохраняем результат
-        event_min.set()  # Устанавливаем событие для минимума
-        event_max.clear()  # Сбрасываем событие для следующей итерации
+            total_sum = sum(numbers)
+            results.append(total_sum)  # Сохраняем результат
+        event_avg.set()  # Устанавливаем событие для среднего
+        event_sum.clear()  # Сбрасываем событие для следующей итерации
 
 
-def find_min():
+def find_average():
+    """
+    Функция для нахождения среднеарифметического значения всех элементов в списке чисел.
+    Ожидает события для начала вычисления среднего, затем находит
+    среднее значение и сохраняет его в результирующий список.
+    Устанавливает событие для поиска суммы после завершения.
+    """
     for i in range(5):
         # Ожидание события
-        event_min.wait()
+        event_avg.wait()
         if numbers:  # Проверяем, что список не пуст
-            min_value = min(numbers)
-            results.append(min_value)  # Сохраняем результат
-        event_max.set()  # Устанавливаем событие для максимума
-        event_min.clear()  # Сбрасываем событие для следующей итерации
+            avg_value = sum(numbers) / len(numbers)
+            results.append(avg_value)  # Сохраняем результат
+        event_sum.set()  # Устанавливаем событие для суммы
+        event_avg.clear()  # Сбрасываем событие для следующей итерации
 
 
 def main():
+    """
+    Основная функция программы. Запрашивает у пользователя ввод чисел,
+    создает и запускает потоки для нахождения суммы и среднеарифметического,
+    а затем ожидает их завершения. После завершения выводит результаты.
+    """
     global numbers
 
     # Ввод чисел от пользователя
     while True:
         user_input = input("Введите числа через пробел: ")
         try:
-            numbers = list(map(int, user_input.split()))  # Исправлено на присвоение
+            numbers = list(map(int, user_input.split()))  # Преобразуем ввод в список чисел
             break  # Выйти из цикла, если ввод корректен
         except ValueError:
             print("Пожалуйста, введите только числовые значения.")
 
     # Создание потоков
-    thread_max = threading.Thread(target=find_max)
-    thread_min = threading.Thread(target=find_min)
+    thread_sum = threading.Thread(target=find_sum)
+    thread_avg = threading.Thread(target=find_average)
 
     # Запуск потоков
-    thread_max.start()
-    thread_min.start()
+    thread_sum.start()
+    thread_avg.start()
 
-    # Начинаем с события для нахождения максимума
-    event_max.set()
+    # Начинаем с события для нахождения суммы
+    event_sum.set()
 
     # Ожидание завершения потоков
-    thread_max.join()
-    thread_min.join()
+    thread_sum.join()
+    thread_avg.join()
 
     # Вывод результатов
     print(" / ".join(map(str, results)))  # Преобразуем числа в строки для вывода
