@@ -1,55 +1,68 @@
 import threading
 
-# Переменные для хранения значений
-max_value = None
-min_value = None
+# Список для хранения чисел
+numbers = []
+
+# События для синхронизации потоков
+event_max = threading.Event()
+event_min = threading.Event()
+
+# Список для хранения результатов
+results = []
 
 
-def find_max(numbers):
-    """Функция для нахождения максимального значения в списке чисел.
-    Параметры:
-    numbers (list): Список чисел, в котором будет производиться поиск максимума.
-    Возвращает:
-    None"""
-    global max_value
-    max_value = max(numbers)  # Находим максимум
+def find_max():
+    for i in range(5):
+        # Ожидание события
+        event_max.wait()
+        if numbers:  # Проверяем, что список не пуст
+            max_value = max(numbers)
+            results.append(max_value)  # Сохраняем результат
+        event_min.set()  # Устанавливаем событие для минимума
+        event_max.clear()  # Сбрасываем событие для следующей итерации
 
 
-def find_min(numbers):
-    """Функция для нахождения минимального значения в списке чисел.
-    Параметры:
-    numbers (list): Список чисел, в котором будет производиться поиск минимума.
-    Возвращает:
-    None"""
-    global min_value
-    min_value = min(numbers)  # Находим минимум
+def find_min():
+    for i in range(5):
+        # Ожидание события
+        event_min.wait()
+        if numbers:  # Проверяем, что список не пуст
+            min_value = min(numbers)
+            results.append(min_value)  # Сохраняем результат
+        event_max.set()  # Устанавливаем событие для максимума
+        event_min.clear()  # Сбрасываем событие для следующей итерации
 
 
-# Запросить у пользователя ввод значений для списка
-while True:
-    user_input = input("Введите числа через пробел: ")
-    try:
-        numbers_list = list(map(int, user_input.split()))
-        break  # Выйти из цикла, если ввод корректен
-    except ValueError:
-        print("Пожалуйста, введите только числовые значения.")
+def main():
+    global numbers
 
-# Создание потоков
-thread_1 = threading.Thread(target=find_max, args=(numbers_list,))
-thread_2 = threading.Thread(target=find_min, args=(numbers_list,))
+    # Ввод чисел от пользователя
+    while True:
+        user_input = input("Введите числа через пробел: ")
+        try:
+            numbers = list(map(int, user_input.split()))  # Исправлено на присвоение
+            break  # Выйти из цикла, если ввод корректен
+        except ValueError:
+            print("Пожалуйста, введите только числовые значения.")
 
-# Запуск потоков
-thread_1.start()
-thread_2.start()
+    # Создание потоков
+    thread_max = threading.Thread(target=find_max)
+    thread_min = threading.Thread(target=find_min)
 
-# Ожидание завершения потоков
-thread_1.join()
-thread_2.join()
+    # Запуск потоков
+    thread_max.start()
+    thread_min.start()
 
-# Цикл для вывода значений поочередно
-for _ in range(5):
-    print(f"{max_value}/{min_value}", end="")
-    if _ < 4:
-        print("/", end="")
+    # Начинаем с события для нахождения максимума
+    event_max.set()
 
-print()
+    # Ожидание завершения потоков
+    thread_max.join()
+    thread_min.join()
+
+    # Вывод результатов
+    print(" / ".join(map(str, results)))  # Преобразуем числа в строки для вывода
+
+
+if __name__ == "__main__":
+    main()
